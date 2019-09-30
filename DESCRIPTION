@@ -1,0 +1,19 @@
+Package: spectralBacktest
+Type: Package
+Title: Spectral Backtests of Forecast Distributions
+Version: 0.2.1
+Author: Michael Gordy and Alexander McNeil
+Maintainer: Michael Gordy <michael.gordy@frb.gov>
+Description: This package implements the class of moment-based spectral backtests described
+   in Gordy and McNeil (2018).  Unconditional and conditional tests of coverage are both
+   provided.  The package is designed for extensibility to the user's choice of kernel
+   function and (in the conditional tests) transformation of lagged PIT values.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.0
+Imports: MASS, purrr, glue, fBasics
+Suggests: knitr, rmarkdown, dplyr, magrittr
+VignetteBuilder: knitr
+NeedsCompilation: no
+Packaged: 2019-01-30 17:08:31 UTC; m1mbg00
