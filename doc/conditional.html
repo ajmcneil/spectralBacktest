@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<meta name="date" content="2019-10-02" />
+
+<title>Spectral backtests of conditional coverage</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(data-line-number);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Spectral backtests of conditional coverage</h1>
+<h4 class="date"><em>2019-10-02</em></h4>
+
+
+
+<p>The spectral MD-test is called with the function <code>spectral_MDtest()</code>. It currently handles monospectral and bispectral tests. Extension to multispectral tests is in progress.</p>
+<p>First we draw a sample of PIT values by applying the normal CDF to a Gaussian ARMA process. The PIT values should display little serial correlation, but serial dependence is revealed in the ACF of the transformed variable <span class="math inline">\(|2P-1|\)</span>. The <code>rHS_arma</code> function emulates historical simulation when there is unmodelled ARMA(1,1) dependence in factor returns.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1">n &lt;-<span class="st"> </span><span class="dv">500</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">P &lt;-<span class="st"> </span><span class="kw">rHS_arma</span>(n, <span class="kw">list</span>(<span class="dt">ar=</span><span class="fl">0.35</span>, <span class="dt">ma=</span><span class="op">-</span><span class="fl">0.1</span>))</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4"><span class="kw">acf</span>(P,<span class="dt">lag=</span><span class="dv">5</span>)</a></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">acf</span>(<span class="kw">abs</span>(<span class="dv">2</span><span class="op">*</span>P<span class="dv">-1</span>),<span class="dt">lag=</span><span class="dv">5</span>)</a></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Samples generated by <code>rHS_arma</code> should be close to uniform in unconditional distribution. We verify with a set of spectral Z-tests.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">alpha1 &lt;-<span class="st"> </span><span class="fl">0.95</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">alpha_star &lt;-<span class="st"> </span><span class="fl">0.99</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">alpha2 &lt;-<span class="st"> </span><span class="fl">0.995</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">ZU &lt;-<span class="st"> </span><span class="kw">list</span>( <span class="dt">name =</span> <span class="st">'Uniform'</span>,</a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">            <span class="dt">type =</span> <span class="st">'mono'</span>,</a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">            <span class="dt">nu =</span> nu_uniform,</a>
+<a class="sourceLine" id="cb3-9" data-line-number="9">            <span class="dt">support =</span> <span class="kw">c</span>(alpha1, alpha2),</a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">            <span class="dt">param =</span> <span class="ot">NULL</span> )</a>
+<a class="sourceLine" id="cb3-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">ZLL &lt;-<span class="st"> </span><span class="kw">list</span>( <span class="dt">name =</span> <span class="st">'Linear/Linear'</span>,</a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">             <span class="dt">type =</span> <span class="st">'bi'</span>,</a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">             <span class="dt">nu =</span> <span class="kw">list</span>(nu_linear, nu_linear),</a>
+<a class="sourceLine" id="cb3-15" data-line-number="15">             <span class="dt">correlation =</span> rho_linear_linear,</a>
+<a class="sourceLine" id="cb3-16" data-line-number="16">             <span class="dt">support =</span> <span class="kw">c</span>(alpha1, alpha2),</a>
+<a class="sourceLine" id="cb3-17" data-line-number="17">             <span class="dt">param =</span> <span class="kw">list</span>(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>) )</a>
+<a class="sourceLine" id="cb3-18" data-line-number="18"></a>
+<a class="sourceLine" id="cb3-19" data-line-number="19">PNS &lt;-<span class="st"> </span><span class="kw">list</span>( <span class="dt">name =</span> <span class="st">'Probitnormal score'</span>,</a>
+<a class="sourceLine" id="cb3-20" data-line-number="20">             <span class="dt">type =</span> <span class="st">'bi'</span>,</a>
+<a class="sourceLine" id="cb3-21" data-line-number="21">             <span class="dt">nu =</span> <span class="kw">list</span>(nu_probitnormal, nu_probitnormal),</a>
+<a class="sourceLine" id="cb3-22" data-line-number="22">             <span class="dt">correlation =</span> rho_probitnormal,</a>
+<a class="sourceLine" id="cb3-23" data-line-number="23">             <span class="dt">support =</span> <span class="kw">c</span>(alpha1, alpha2),</a>
+<a class="sourceLine" id="cb3-24" data-line-number="24">             <span class="dt">param =</span> <span class="kw">list</span>(1L, 2L) )</a>
+<a class="sourceLine" id="cb3-25" data-line-number="25"></a>
+<a class="sourceLine" id="cb3-26" data-line-number="26"><span class="co"># gather the tests into a list and execute!</span></a>
+<a class="sourceLine" id="cb3-27" data-line-number="27">kernlist &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">ZU=</span>ZU, <span class="dt">ZLL=</span>ZLL, <span class="dt">PNS=</span>PNS)</a>
+<a class="sourceLine" id="cb3-28" data-line-number="28">pval_Z &lt;-<span class="st"> </span><span class="kw">map_df</span>(kernlist, <span class="cf">function</span>(kern) <span class="kw">spectral_Ztest</span>(kern,P))</a>
+<a class="sourceLine" id="cb3-29" data-line-number="29"><span class="kw">kable</span>(pval_Z, <span class="dt">digits=</span><span class="dv">5</span>, <span class="dt">caption=</span><span class="st">'p-values of tests of unconditional coverage'</span>)</a></code></pre></div>
+<table>
+<caption>p-values of tests of unconditional coverage</caption>
+<thead>
+<tr class="header">
+<th align="right">ZU</th>
+<th align="right">ZLL</th>
+<th align="right">PNS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.64674</td>
+<td align="right">0.1145</td>
+<td align="right">0.16819</td>
+</tr>
+</tbody>
+</table>
+<p>The MD tests require that we specify a kernel and a CVT structure with the same dimensionality. That is, we use a monospectral CVT with a monokernel and a bispectral CVT with a bikernel. We want to run a set of tests, so specify a lists of these structures. The MD tests offer three ways to calculate the <span class="math inline">\(H\)</span> matrix, so each is demonstrated.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co"># Monospectral</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">CVT &lt;-<span class="st"> </span><span class="kw">list</span>( <span class="dt">name =</span> <span class="st">'Power 4'</span>,</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3">             <span class="dt">type =</span> <span class="st">'mono'</span>,</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">             <span class="dt">h_closure =</span> CVT_PtildePower,</a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">             <span class="dt">h_param =</span> <span class="dv">4</span>,</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">             <span class="dt">lags =</span> 4L )</a>
+<a class="sourceLine" id="cb4-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb4-8" data-line-number="8"><span class="co"># Bispectral.  Note that each element of lags is a nonnegative integer.</span></a>
+<a class="sourceLine" id="cb4-9" data-line-number="9">CVT2 &lt;-<span class="st"> </span><span class="kw">list</span>( <span class="dt">name =</span> <span class="st">'Power4/Power 0.5'</span>,</a>
+<a class="sourceLine" id="cb4-10" data-line-number="10">              <span class="dt">type =</span> <span class="st">'bi'</span>,</a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">              <span class="dt">h_closure =</span> <span class="kw">list</span>(CVT_PtildePower, CVT_PtildePower),</a>
+<a class="sourceLine" id="cb4-12" data-line-number="12">              <span class="dt">correlation =</span> rho_PtildePower,</a>
+<a class="sourceLine" id="cb4-13" data-line-number="13">              <span class="dt">h_param =</span> <span class="kw">list</span>(<span class="dv">4</span>,<span class="dv">1</span><span class="op">/</span><span class="dv">2</span>),  </a>
+<a class="sourceLine" id="cb4-14" data-line-number="14">              <span class="dt">lags =</span> <span class="kw">c</span>(4L,<span class="dv">0</span>) )</a>
+<a class="sourceLine" id="cb4-15" data-line-number="15"></a>
+<a class="sourceLine" id="cb4-16" data-line-number="16">MDlist &lt;-<span class="st"> </span><span class="kw">list</span>(CVT, CVT2, CVT2)  <span class="co"># same length as kernlist, defined earlier</span></a>
+<a class="sourceLine" id="cb4-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb4-18" data-line-number="18">infoinH &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="st">'none'</span>, <span class="st">'partial'</span>, <span class="st">'full'</span>)</a>
+<a class="sourceLine" id="cb4-19" data-line-number="19">pval_MD &lt;-<span class="st"> </span><span class="kw">map_df</span>(infoinH, <span class="cf">function</span>(s) </a>
+<a class="sourceLine" id="cb4-20" data-line-number="20">                       q &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dt">Information=</span>s,</a>
+<a class="sourceLine" id="cb4-21" data-line-number="21">                              <span class="kw">map2</span>(kernlist, MDlist, </a>
+<a class="sourceLine" id="cb4-22" data-line-number="22">                              <span class="op">~</span><span class="kw">spectral_MDtest</span>(.x, .y, P, <span class="dt">informationH=</span>s))))</a>
+<a class="sourceLine" id="cb4-23" data-line-number="23"></a>
+<a class="sourceLine" id="cb4-24" data-line-number="24"><span class="kw">kable</span>(pval_MD, <span class="dt">digits=</span><span class="dv">5</span>, <span class="dt">caption=</span><span class="st">'p-values of MD tests of conditional coverage'</span>)</a></code></pre></div>
+<table>
+<caption>p-values of MD tests of conditional coverage</caption>
+<thead>
+<tr class="header">
+<th align="left">Information</th>
+<th align="right">ZU</th>
+<th align="right">ZLL</th>
+<th align="right">PNS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">none</td>
+<td align="right">0.21959</td>
+<td align="right">0.04165</td>
+<td align="right">0.01482</td>
+</tr>
+<tr class="even">
+<td align="left">partial</td>
+<td align="right">0.08786</td>
+<td align="right">0.01273</td>
+<td align="right">0.00332</td>
+</tr>
+<tr class="odd">
+<td align="left">full</td>
+<td align="right">0.10180</td>
+<td align="right">0.01730</td>
+<td align="right">0.00618</td>
+</tr>
+</tbody>
+</table>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

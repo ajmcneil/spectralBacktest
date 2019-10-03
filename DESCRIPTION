@@ -11,9 +11,13 @@ Description: This package implements the class of moment-based spectral backtest
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.0
-Imports: MASS, purrr, glue, fBasics
-Suggests: knitr, rmarkdown, dplyr, magrittr
+RoxygenNote: 6.1.1
+Imports: MASS,
+    purrr,
+    glue,
+    fBasics
+Suggests: knitr,
+    rmarkdown,
+    dplyr,
+    magrittr
 VignetteBuilder: knitr
-NeedsCompilation: no
-Packaged: 2019-01-30 17:08:31 UTC; m1mbg00

@@ -83,8 +83,8 @@ CVT2 <- list( name = 'Power4/Power 0.5',
               type = 'bi',
               h_closure = list(CVT_PtildePower, CVT_PtildePower),
               correlation = rho_PtildePower,
-              h_param = list(4,1/2),
-              lags = c(4L,2L) )
+              h_param = list(4,1/2),  
+              lags = c(4L,0) )
 
 MDlist <- list(CVT, CVT2, CVT2)  # same length as kernlist, defined earlier
 
