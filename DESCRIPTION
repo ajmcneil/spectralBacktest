@@ -21,3 +21,5 @@ Suggests: knitr,
     dplyr,
     magrittr
 VignetteBuilder: knitr
+URL: https://github.com/ajmcneil/spectralbacktest.git
+BugReports: https://github.com/ajmcneil/spectralbacktest/issues
