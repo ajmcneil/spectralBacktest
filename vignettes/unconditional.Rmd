@@ -91,6 +91,20 @@ ZAE <- list( name = 'Arcsin/Epanechnikov',
              support = c(alpha1, alpha2),
              param = list(NULL, NULL) )
 
+ZQQ <- list( name = 'quadratic/Quadratic',
+             type = 'bi',
+             nu = list(nu_beta, nu_beta),
+             correlation = rho_beta_beta,
+             support = c(alpha1, alpha2),
+             param = list(c(3,1), c(1,3)) )
+
+ZQUQ <- list( name = 'quadratic/Uniform/Quadratic',
+             type = 'multi',
+             nu = list(nu_beta, nu_beta),
+             correlation = rho_beta_beta,
+             support = c(alpha1, alpha2),
+             param = list(c(3,1), c(1,1), c(1,3)) )
+
 PNS <- list( name = 'Probitnormal score',
              type = 'bi',
              nu = list(nu_probitnormal, nu_probitnormal),

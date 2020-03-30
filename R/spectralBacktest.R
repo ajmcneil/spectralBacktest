@@ -194,7 +194,7 @@ NULL
 #   In monokernel case, returns a vector W rather than a list of W.
 apply_nu_to_PIT <- function(kernel, PIT, standardize=TRUE) {
   switch(kernel$type,
-         mono = kernel$nu(monokernel$support, kernel$param, standardize)(PIT),
+         mono = kernel$nu(kernel$support, kernel$param, standardize)(PIT),
          bi = list(kernel$nu[[1]](kernel$support, kernel$param[[1]], standardize)(PIT),
                    kernel$nu[[2]](kernel$support, kernel$param[[2]], standardize)(PIT)),
          multi = lapply(kernel$param,

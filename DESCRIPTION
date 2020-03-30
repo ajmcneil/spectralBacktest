@@ -1,7 +1,7 @@
 Package: spectralBacktest
 Type: Package
 Title: Spectral Backtests of Forecast Distributions
-Version: 0.2.1
+Version: 0.2.2
 Author: Michael Gordy and Alexander McNeil
 Maintainer: Michael Gordy <michael.gordy@frb.gov>
 Description: This package implements the class of moment-based spectral backtests described
@@ -21,5 +21,3 @@ Suggests: knitr,
     dplyr,
     magrittr
 VignetteBuilder: knitr
-URL: https://github.com/ajmcneil/spectralbacktest.git
-BugReports: https://github.com/ajmcneil/spectralbacktest/issues

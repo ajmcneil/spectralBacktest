@@ -236,6 +236,23 @@ series3F2 <- function(a1,b1,a2,b2,tol=1e-14) {
   return(F)
 }
 
+# Helper function for the log Pochhammer function (n)_k.
+lpochhammer <- function(n, k)
+  lgamma(n+k)-lgamma(n)
+
+# Helper function for special case of the mustar integral for p==1 or q==1
+# Integral of (1-u)*g_1(u)*G_2(u)
+mustar_beta <- function(p1, q1, p2, q2) {
+  if (q2==1) {
+    f <- q1*exp(lpochhammer(p1,p2)-lpochhammer(p1+q1,p2+1))
+  } else if (p2==1) {
+    f <- (q1/(p1+q1))-exp(lpochhammer(q1,q2+1)-lpochhammer(p1+q1,q2+1))
+  } else {
+    f <- (beta(p1+p2,1+q1+q2)/(p2*beta(p1,q1)*beta(p2,q2)))*series3F2(p1,q1,p2,q2)
+  }
+  f
+}
+
 #' Beta kernel function
 #'
 #' Returns a function nu(P), where nu is the beta kernel on
@@ -266,7 +283,7 @@ mu_beta <- function(support=c(0,1), param=c(1,1)) {
   p <- param[1]
   q <- param[2]
   mu1 <- q/(p+q)
-  mu2 <- 2*(beta(2*p,1+2*q)/(p*beta(p,q)^2))*series3F2(p,q,p,q)
+  mu2 <- 2*mustar_beta(p,q,p,q)
   mu <- 1-support[2]+diff(support)*c(mu1=mu1, mu2=mu2)
   return(mu)
 }
@@ -415,8 +432,7 @@ rho_beta_beta <- function(support=c(0,1), param=list(NULL,NULL)) {
   q1 <- param[[1]][2]
   p2 <- param[[2]][1]
   q2 <- param[[2]][2]
-  betratio <- beta(p1+p2,1+q1+q2)/(beta(p1,q1)*beta(p2,q2))  # same for both kernels
-  mux <- betratio*(series3F2(p1,q1,p2,q2)/p2 + series3F2(p2,q2,p1,q1)/p1)
+  mux <- mustar_beta(p1,q1,p2,q2) + mustar_beta(p2,q2,p1,q1)
   cross_moment_to_correlation(1-alf2+(alf2-alf1)*mux,
                               mu_beta(support,param[[1]]),
                               mu_beta(support,param[[2]]))
