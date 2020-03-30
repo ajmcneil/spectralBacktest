@@ -8,5 +8,3 @@ To install:
 
 To install with vignettes (SLOWER!):
 > devtools::install_github("ajmcneil/spectralBacktest", build_vignettes = TRUE)
-
-The pacakge dplyr is needed for the installation of the vignettes.
