@@ -4,8 +4,14 @@
 \alias{monospectral_MDtest}
 \title{Monospectral MD test}
 \usage{
-monospectral_MDtest(monokernel, CVT, PIT, h_matrix = NULL,
-  informationH = "none", singular_Sigma_NA = FALSE)
+monospectral_MDtest(
+  monokernel,
+  CVT,
+  PIT,
+  h_matrix = NULL,
+  informationH = "none",
+  singular_Sigma_NA = FALSE
+)
 }
 \arguments{
 \item{monokernel}{(list) mono-kernel object (see package help)}

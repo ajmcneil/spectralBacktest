@@ -12,6 +12,7 @@ vignette: >
 library(spectralBacktest)
 library(purrr)
 library(knitr)
+library(Matrix)
 set.seed(543)
 
 ```

@@ -59,7 +59,7 @@ nu_epanechnikov <- function(support=c(0,1), param=NULL, standardize=TRUE) {
     P <- truncatePIT(PIT, support, rescale = TRUE)
     W <- P^2*(3-2*P)
     if (standardize) {
-      mu <- as.numeric(mu_epanechnikov(support))
+      mu <- mu_epanechnikov(support) %>% unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
@@ -89,7 +89,7 @@ nu_uniform <- function(support=c(0,1), param=NULL, standardize=TRUE) {
   nu <- function(PIT) {
     W <- truncatePIT(PIT, support, rescale=TRUE)
     if (standardize) {
-      mu <- as.numeric(mu_uniform(support))
+      mu <- mu_uniform(support) %>% unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
@@ -122,7 +122,7 @@ nu_linear <- function(support=c(0,1), param=1, standardize=TRUE) {
     P <- truncatePIT(PIT, support, rescale=TRUE)
     W <- P*(1-sign(param)*(1-P))
     if (standardize) {
-      mu <- as.numeric(mu_linear(support,param))
+      mu <- mu_linear(support,param) %>% unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
@@ -158,7 +158,7 @@ nu_arcsin <- function(support=c(0,1), param=NULL, standardize=TRUE) {
   nu <- function(PIT) {
     W <- pbeta(truncatePIT(PIT, support, rescale=TRUE),1/2,1/2)
     if (standardize) {
-      mu <- as.numeric(mu_arcsin(support,param))
+      mu <- mu_arcsin(support,param) %>% unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
@@ -193,7 +193,7 @@ nu_exponential <- function(support=c(0,1), param=0, standardize=TRUE) {
       W <- (exp(param*P)-1)*diff(support)/param
     }
     if (standardize) {
-      mu <- as.numeric(mu_exponential(support, param))
+      mu <- mu_exponential(support, param) %>% unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
@@ -223,70 +223,7 @@ mu_exponential <- function(support=c(0,1), param=0) {
   return(mu)
 }
 
-# Helper function for the beta kernel.  Provides
-# 3F2([1, a1+a2, a2+b2], [1+a2, 1+a1+a2+b1+b2]; 1)
-series3F2 <- function(a1,b1,a2,b2,tol=1e-14) {
-  f <- F <- 1
-  k <- 0
-  while (f/F > tol) {
-    k <- k+1
-    f <- f*(a1+a2+k-1)*(a2+b2+k-1)/((a2+k)*(a1+a2+b1+b2+k))
-    F <- F+f
-  }
-  return(F)
-}
 
-# Helper function for the log Pochhammer function (n)_k.
-lpochhammer <- function(n, k)
-  lgamma(n+k)-lgamma(n)
-
-# Helper function for special case of the mustar integral for p==1 or q==1
-# Integral of (1-u)*g_1(u)*G_2(u)
-mustar_beta <- function(p1, q1, p2, q2) {
-  if (q2==1) {
-    f <- q1*exp(lpochhammer(p1,p2)-lpochhammer(p1+q1,p2+1))
-  } else if (p2==1) {
-    f <- (q1/(p1+q1))-exp(lpochhammer(q1,q2+1)-lpochhammer(p1+q1,q2+1))
-  } else {
-    f <- (beta(p1+p2,1+q1+q2)/(p2*beta(p1,q1)*beta(p2,q2)))*series3F2(p1,q1,p2,q2)
-  }
-  f
-}
-
-#' Beta kernel function
-#'
-#' Returns a function nu(P), where nu is the beta kernel on
-#' the desired \code{support} with parameter \eqn{(p,q)=}\code{param}.
-#'
-#' @inheritParams .monokernel_function
-#' @export
-nu_beta <- function(support=c(0,1), param=c(1,1), standardize=TRUE) {
-  nu <- function(PIT) {
-    W <- pbeta(truncatePIT(PIT, support, rescale=TRUE),param[1],param[2])
-    if (standardize) {
-      mu <- as.numeric(mu_beta(support, param))
-      W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
-    }
-    return(W)
-  }
-  return(nu)
-}
-
-#' Beta moments
-#'
-#' Returns a vector of the first two uncentered moments \eqn{(\mu_1,\mu_2)} for the
-#' Beta kernel on the desired \code{support} with parameter \eqn{(p,q)=}\code{param}.
-#'
-#' @inheritParams .monokernel_moments
-#' @export
-mu_beta <- function(support=c(0,1), param=c(1,1)) {
-  p <- param[1]
-  q <- param[2]
-  mu1 <- q/(p+q)
-  mu2 <- 2*mustar_beta(p,q,p,q)
-  mu <- 1-support[2]+diff(support)*c(mu1=mu1, mu2=mu2)
-  return(mu)
-}
 
 #' Discrete kernel function
 #'
@@ -301,7 +238,7 @@ nu_discrete <- function(support=0.99, param=rep(1,length(support)), standardize=
                          support, param)
     W <- rowSums(violations)
     if (standardize) {
-      mu <- as.numeric(mu_discrete(support, param))
+      mu <- mu_discrete(support, param) %>% unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
@@ -336,7 +273,7 @@ nu_pearson <- function(support=NULL, param=0.99, standardize=TRUE) {
   nu <- function(PIT) {
     W <- exceedancePIT(PIT,param)
     if (standardize) {
-      mu <- as.numeric(mu_pearson(support, param))
+      mu <- mu_pearson(support, param) %>% unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
@@ -356,7 +293,7 @@ nu_pearson <- function(support=NULL, param=0.99, standardize=TRUE) {
 #' @inheritParams .monokernel_moments
 #' @export
 mu_pearson <- function(support=NULL, param=0.99) {
-  mu2 <- mu1 <- as.numeric(1-param)
+  mu2 <- mu1 <- 1-unname(param)
   mu <- c(mu1=mu1, mu2=mu2)
   return(mu)
 }
@@ -373,7 +310,7 @@ mu_pearson <- function(support=NULL, param=0.99) {
 #' @export
 cross_moment_to_correlation <- function(mux, muA, muB) {
   sigma <- sqrt((muA[2]-muA[1]^2)*(muB[2]-muB[1]^2))
-  as.numeric((mux - muA[1]*muB[1])/sigma)
+  (mux - muA[1]*muB[1])/sigma %>% unname()
 }
 
 
@@ -419,24 +356,6 @@ rho_arcsin_epanechnikov <- function(support=c(0,1), param=NULL)
                               mu_epanechnikov(support) )
 
 
-#' Beta/Beta correlation
-#'
-#' Returns the correlation for the Beta/Beta pair on common \code{support}.
-#'
-#' @inheritParams .bikernel_correlation
-#' @export
-rho_beta_beta <- function(support=c(0,1), param=list(NULL,NULL)) {
-  alf1 <- support[1]
-  alf2 <- support[2]
-  p1 <- param[[1]][1]
-  q1 <- param[[1]][2]
-  p2 <- param[[2]][1]
-  q2 <- param[[2]][2]
-  mux <- mustar_beta(p1,q1,p2,q2) + mustar_beta(p2,q2,p1,q1)
-  cross_moment_to_correlation(1-alf2+(alf2-alf1)*mux,
-                              mu_beta(support,param[[1]]),
-                              mu_beta(support,param[[2]]))
-}
 
 # Probitnormal Score case
 
@@ -524,17 +443,18 @@ nu_probitnormal <- function(support=c(0,1), param=0, standardize=TRUE) {
       mid_fn <- function(p) qnorm(p)^2-1
     }
     scorefn <- function(p) {
-      Pregion <- cut(p, breaks=c(0, alpha1, alpha2, 1),
+      stopifnot(p>=0, p<=1)
+      Pregion <- cut(p, breaks=c(0, alpha1, alpha2, 1.01),
                      labels=c('low','mid','high'), include.lowest = TRUE)
       switch(as.character(Pregion),
              low = nu_low,
              mid = mid_fn(p),
              high = nu_high )
     }
-    W <- sapply(PIT,scorefn)
+    W <- map_dbl(PIT,scorefn)
     if (standardize) {
-      mu <- mu_probitnormal(support, param)
-      W <- as.numeric((W-mu[1])/sqrt(mu[2]-mu[1]^2))
+      mu <- mu_probitnormal(support, param) %>% unname()
+      W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)
   }

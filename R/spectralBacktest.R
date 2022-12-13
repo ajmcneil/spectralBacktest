@@ -193,13 +193,44 @@ NULL
 # Helper function to form a list of transformed PIT given a kernel object.
 #   In monokernel case, returns a vector W rather than a list of W.
 apply_nu_to_PIT <- function(kernel, PIT, standardize=TRUE) {
-  switch(kernel$type,
-         mono = kernel$nu(kernel$support, kernel$param, standardize)(PIT),
-         bi = list(kernel$nu[[1]](kernel$support, kernel$param[[1]], standardize)(PIT),
-                   kernel$nu[[2]](kernel$support, kernel$param[[2]], standardize)(PIT)),
-         multi = lapply(kernel$param,
-                              function(prm)
-                                 kernel$nu(kernel$support, prm, standardize)(PIT)) )
+  if (kernel$type=='mono')
+    return(kernel$nu(kernel$support, kernel$param, standardize)(PIT))
+
+  isscaling <- 'scaling' == names(kernel$param)
+  hasscaling <- any(isscaling)
+  if (hasscaling) {
+    stopifnot(length(kernel$param)==2)
+    param <- kernel$param[!isscaling][[1]]
+    scaling <- kernel$param[isscaling]$scaling
+  } else {
+    param <- kernel$param
+  }
+
+  # bikernel case
+  if (kernel$type=='bi') {
+    nuPIT <- function(k) {
+      if (hasscaling) {
+        prmsca <- list(param[[k]], scaling)
+        names(prmsca) <- names(kernel$param)
+        kernel$nu[[k]](kernel$support, prmsca, standardize)(PIT)
+      } else {
+        kernel$nu[[k]](kernel$support, param[[k]], standardize)(PIT)
+      }
+    }
+    return(list(nuPIT(1), nuPIT(2)))
+  }
+
+  # multikernel case
+  nuPIT <- function(prm) {
+    if (hasscaling) {
+      prmsca <- list(prm, scaling)
+      names(prmsca) <- names(kernel$param)
+      kernel$nu(kernel$support, prmsca, standardize)(PIT)
+    } else {
+      kernel$nu(kernel$support, prm, standardize)(PIT)
+    }
+  }
+  lapply(param, nuPIT)
 }
 
 # Helper function to check for degeneracy in W.
@@ -217,6 +248,40 @@ is.degenerateW <- function(W) {
 exceedancePIT <- function(P,u)
   as.numeric(P>=u)
 
+#' Theoretical correlation matrix for standardized multikernel
+#'
+#' @param multikernel (list) multikernel object (see package help)
+#' @return \eqn{Sigma} correlation matrix of class Matrix
+multispectral_correlation <- function(multikernel) {
+  isscaling <- 'scaling' == names(multikernel$param)
+  hasscaling <- any(isscaling)
+  if (hasscaling) {
+    stopifnot(length(multikernel$param)==2)
+    param <- multikernel$param[!isscaling][[1]]
+    scaling <- multikernel$param[isscaling]$scaling
+  } else {
+    param <- multikernel$param
+  }
+  J <- length(param)
+  Sigma <- Matrix::Diagonal(J)
+  rho <- function(jpair) {
+    if (hasscaling) {
+      multikernel$correlation(multikernel$support,
+                              param[jpair],
+                              scaling=scaling)
+    } else {
+      multikernel$correlation(multikernel$support, multikernel$param[jpair])
+    }
+  }
+
+  for (j1 in (1:(J-1))) {
+    for (j2 in ((j1+1):J)) {
+      Sigma[j2,j1] <- Sigma[j1,j2] <- rho(c(j1,j2))
+    }
+  }
+  return(Sigma)
+}
+
 #' Spectral Z-test for mono-kernel
 #'
 #' @param monokernel (list) mono-kernel object (see package help)
@@ -225,11 +290,11 @@ exceedancePIT <- function(P,u)
 #' @return \eqn{p}-value of Z-test
 #' @export
 monospectral_Ztest <- function(monokernel, PIT, twosided=TRUE) {
-  P <- as.numeric(PIT[!is.na(PIT)])
-  W <- monokernel$nu(monokernel$support, monokernel$param, standardize=TRUE)(P)
+  W <- PIT[!is.na(PIT)] %>% as.numeric() %>%
+       monokernel$nu(monokernel$support, monokernel$param, standardize=TRUE)()
   if (is.degenerateW(W))
     warning(glue::glue('Kernel {monokernel$name}: transformed PIT has degenerate distribution.\n'))
-  Z <- sqrt(length(P))*mean(W)
+  Z <- sqrt(length(W))*mean(W)
   if (twosided)
     output <- 2*(1-pnorm(abs(Z)))
   else
@@ -252,8 +317,9 @@ bispectral_Ztest <- function(bikernel, PIT) {
   if (any(is.degenerateW(W_list)))
     warning(glue::glue('Kernel {bikernel$name}: transformed PIT has degenerate distribution.\n'))
   Wbar <- purrr::map_dbl(W_list, mean)
-  rho <- bikernel$correlation(bikernel$support, bikernel$param)
-  Sigma <- matrix(c(1, rho, rho, 1), nrow=2)
+#  rho <- bikernel$correlation(bikernel$support, bikernel$param)
+#  Sigma <- matrix(c(1, rho, rho, 1), nrow=2)
+  Sigma <- multispectral_correlation(bikernel)
   stat <-  length(P)*mahalanobis(Wbar, center=0, cov=Sigma)
   return(1-pchisq(stat,df=2))
 }
@@ -266,22 +332,12 @@ bispectral_Ztest <- function(bikernel, PIT) {
 #' @export
 multispectral_Ztest <- function(multikernel, PIT) {
   P <- as.numeric(PIT[!is.na(PIT)])
-  # Wbar <- sapply(multikernel$param,
-  #                function(prm)
-  #                    mean(multikernel$nu(multikernel$support, prm, standardize=TRUE)(P)))
-
   W_list <- apply_nu_to_PIT(multikernel, P, standardize = TRUE)
   if (any(is.degenerateW(W_list)))
     warning(glue::glue('Kernel {multikernel$name}: transformed PIT has degenerate distribution.\n'))
   Wbar <- purrr::map_dbl(W_list, mean)
   J <- length(Wbar)
-  Sigma <- diag(rep(1,J))
-  for (j1 in (1:(J-1))) {
-    for (j2 in ((j1+1):J)) {
-      Sigma[j2,j1] <- Sigma[j1,j2] <-
-        multikernel$correlation(multikernel$support, multikernel$param[c(j1,j2)])
-    }
-  }
+  Sigma <- multispectral_correlation(multikernel)
   stat <-  length(P)*mahalanobis(Wbar, center=0, cov=Sigma)
   return(1-pchisq(stat,df=J))
 }

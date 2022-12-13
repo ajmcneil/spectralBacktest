@@ -4,8 +4,11 @@
 \alias{nu_discrete}
 \title{Discrete kernel function}
 \usage{
-nu_discrete(support = 0.99, param = rep(1, length(support)),
-  standardize = TRUE)
+nu_discrete(
+  support = 0.99,
+  param = rep(1, length(support)),
+  standardize = TRUE
+)
 }
 \arguments{
 \item{support}{lower and upper bound of kernel window}

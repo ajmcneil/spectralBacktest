@@ -211,10 +211,13 @@ safeInverse <- function(Sigma, cvtname, singular_Sigma_NA)
                      if (singular_Sigma_NA) {
                        NA
                      } else {
-                       MASS::ginv(Sigma)
+                       MASS::ginv(as.matrix(Sigma))
                      }
                    })
 
+# Helper function to enforce single approach to df calculation
+dfchisq <- function(invV)
+  as.numeric(rankMatrix(invV))
 
 #' Monospectral MD test
 #'
@@ -245,7 +248,7 @@ monospectral_MDtest <- function(monokernel, CVT, PIT, h_matrix=NULL,
     warning(glue::glue('Kernel {monokernel$name}: transformed PIT has degenerate distribution.\n'))
   Y <- as.vector(W %*% h)/length(W)
   stat <- length(W)*mahalanobis(Y, center=0, cov=invH, inverted=TRUE)
-  return(1- pchisq(stat, df=fBasics::rk(invH)))
+  return(1- pchisq(stat, df=dfchisq(invH)))
 }
 
 #' Bispectral MD test
@@ -283,7 +286,58 @@ bispectral_MDtest <- function(bikernel, CVT, PIT, h_list=NULL,
   Y <- as.vector(c(W_list[[1]] %*% h_list[[1]][keepobs,],
                    W_list[[2]] %*% h_list[[2]][keepobs,]))/length(P)
   stat <- length(P)*mahalanobis(Y, center=0, cov=invSigma, inverted=TRUE)
-  return(1- pchisq(stat, df=fBasics::rk(invSigma)))
+  return(1- pchisq(stat, df=dfchisq(invSigma)))
+}
+
+#' Multispectral SUR MD test
+#'
+#' @param kernlist (list) multi- or bi-kernel object (see package help)
+#' @param CVT list describing lag structure for each kernel
+#' @param PIT Vector of probability integral transform values
+#' @param h_list If provided, then use instead of calling \code{h_closure}.
+#' @param GW (boolean) If true, then run Giacomini-White (OLS) in place of SUR.
+#' @param singular_Sigma_NA (boolean). If true, then set \eqn{p}-value to \code{NA} when
+#'    \eqn{Sigma} is singular.
+#' @return \eqn{p}-value of chisq test.
+#' @export
+multispectral_SUR_MDtest <- function(kernlist, CVT, PIT, h_list=NULL, GW=FALSE,
+                                     singular_Sigma_NA=FALSE, npval=0) {
+  stopifnot(length(CVT$lags)>=2)
+  if (is.null(h_list))
+    h_list <- multispectral_h_matrix(CVT, PIT)   # works for bispectral too
+  keepobs <- !is.na(PIT) & !is.na(rowSums(do.call(cbind,h_list)))
+  P <- as.numeric(PIT[keepobs])
+  # Form block diagonal matrix of regressors
+  X <- map(h_list, ~.x[keepobs,]) %>% .bdiag
+  # Independent variable first in list form
+  W_list <- apply_nu_to_PIT(kernlist, P, standardize = TRUE) %>% map(as.matrix)
+  if (any(is.degenerateW(W_list)))
+    warning(glue::glue('Kernel {kernlist$name}: transformed PIT has degenerate distribution.\n'))
+  Y <- do.call(rbind, W_list)
+  rhoMat <- multispectral_correlation(kernlist)
+  if (GW) {
+    Omega <- kronecker(rhoMat, Diagonal(length(P)))
+    invSigma <- safeInverse(Matrix::t(X) %*% Omega %*% X, CVT$name, singular_Sigma_NA)
+    Xt <- Matrix::t(X)
+  } else {
+    invOmega <- kronecker(solve(rhoMat), Diagonal(length(P)))
+    invSigma <- safeInverse(Matrix::t(X) %*% invOmega %*% X, CVT$name, singular_Sigma_NA)
+    Xt <- Matrix::t(X) %*% invOmega
+  }
+  if (any(is.na(invSigma))) return(NA)
+  XtY <- Xt %*% Y
+  stat <- as.numeric(Matrix::t(XtY) %*% invSigma %*% XtY)
+  if (npval==0) {
+     return(1- pchisq(stat, df=dfchisq(invSigma)))
+  } else {
+     rpval <- function() {
+       W_list <- apply_nu_to_PIT(kernlist, runif(length(P)), standardize = TRUE) %>% map(as.matrix)
+       XtY <- Xt %*% do.call(rbind, W_list)
+       as.numeric(Matrix::t(XtY) %*% invSigma %*% XtY)
+     }
+     Femp <- replicate(npval, rpval()) %>% ecdf()
+     return(1-Femp(stat))
+  }
 }
 
 #' Spectral MD test

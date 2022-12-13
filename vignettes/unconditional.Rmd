@@ -76,6 +76,17 @@ ZLn <- list( name = 'LinearDown',
             support = c(alpha1, alpha2),
             param = -1 )
 
+ZZ1 <- list( name = 'Beta(1,0) on [alpha1, 1]',
+            type = 'mono',
+            nu = nu_beta,
+            support = c(alpha1, alpha2),
+            param = list(beta=c(1,0), scaling=c(alpha1,1)))
+
+ZZhalf <- list( name = 'Beta(1/2,0) on [alpha1, 1]',
+            type = 'mono',
+            nu = nu_beta,
+            support = c(alpha1, alpha2),
+            param = list(beta=c(1/2,0), scaling=c(alpha1,1)))
 
 ZLL <- list( name = 'linear/Linear',
              type = 'bi',
@@ -100,7 +111,7 @@ ZQQ <- list( name = 'quadratic/Quadratic',
 
 ZQUQ <- list( name = 'quadratic/Uniform/Quadratic',
              type = 'multi',
-             nu = list(nu_beta, nu_beta),
+             nu = nu_beta,
              correlation = rho_beta_beta,
              support = c(alpha1, alpha2),
              param = list(c(3,1), c(1,1), c(1,3)) )
@@ -121,13 +132,13 @@ Pearson3 <- list(name = 'Pearson',
 
 # gather the tests into a list and execute!
 kernlist <- list(BIN=BIN, Pearson3=Pearson3, ZU3=ZU3,
-                 ZU=ZU, ZE=ZE, ZLp=ZLp, ZLn=ZLn,
-                 ZLL=ZLL, ZAE=ZAE, PNS=PNS)
+                 ZU=ZU, ZE=ZE, ZLp=ZLp, ZLn=ZLn, ZZ1=ZZ1, ZZhalf=ZZhalf,
+                 ZLL=ZLL, ZAE=ZAE, PNS=PNS, ZQQ=ZQQ, ZQUQ=ZQUQ)
 
-pval <- map_df(list(PIT1, PIT2), 
+pval <- map_dfr(list(PIT1, PIT2), 
                function(P) lapply(kernlist, function(kern) spectral_Ztest(kern,P))) %>%
-        mutate(PIT=c('Uniform',sprintf('Beta(%0.2f,%0.2f)',alfbet,alfbet))) %>%
-        select('PIT', everything())
+        mutate(PIT=c('Uniform',sprintf('Beta(%0.2f,%0.2f)',alfbet,alfbet)), .before=1)
+        # select('PIT', everything())
 
 kable(pval, digits=4)
 
@@ -140,15 +151,14 @@ To assess *size*, we need a uniform DGP, so set $a=b=1$. Ideally, the test will 
 ```{r warning=FALSE}
 
 n <- 500
-a <- b <- 1  # if a==b==1, we are assessing size of test
 Npf <- 5000  # number of portfolios
-rpval <- function(kernellist) {
+rpval <- function(kernellist,a,b) {
   P <- rbeta(n,a,b)
   map(kernellist, ~spectral_Ztest(.x,P))
 }
 
-df <- rerun(Npf, rpval(kernlist)) %>%  map_df(`[`,names(kernlist))
-rejectrate <- summarize_all(df, list(function(x) mean(x<=0.05)))
+df <- rerun(Npf, rpval(kernlist,1,1)) %>%  map_dfr(`[`,names(kernlist))
+rejectrate <- summarize(df, across(.fns=function(x) mean(x<=0.05)))
 kable(rejectrate, digits=4, caption='Size. Frequency of test rejections at 5% level')
 
 ```
@@ -157,9 +167,8 @@ Finally, we assess the *power* of the tests against a non-uniform DGP. Here we w
 
 ```{r warning=FALSE}
 
-a <- b <- alfbet  
-df <- rerun(Npf, rpval(kernlist)) %>%  map_df(`[`,names(kernlist))
-rejectrate <- summarize_all(df, list(function(x) mean(x<=0.05)))
+df <- rerun(Npf, rpval(kernlist,alfbet,alfbet)) %>%  map_dfr(`[`,names(kernlist))
+rejectrate <- summarize(df, across(.fns=function(x) mean(x<=0.05)))
 kable(rejectrate, digits=4, caption='Power. Frequency of test rejections at 5% level')
 
 ```

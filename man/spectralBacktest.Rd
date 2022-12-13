@@ -3,7 +3,6 @@
 \docType{package}
 \name{spectralBacktest}
 \alias{spectralBacktest}
-\alias{spectralBacktest-package}
 \title{spectralBacktest: Package for spectral backtesting of forecast distributions}
 \description{
 The spectralBacktest package implements spectral backtests of Z-test form as

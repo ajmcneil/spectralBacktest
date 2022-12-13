@@ -4,8 +4,14 @@
 \alias{bispectral_MDtest}
 \title{Bispectral MD test}
 \usage{
-bispectral_MDtest(bikernel, CVT, PIT, h_list = NULL,
-  informationH = "none", singular_Sigma_NA = FALSE)
+bispectral_MDtest(
+  bikernel,
+  CVT,
+  PIT,
+  h_list = NULL,
+  informationH = "none",
+  singular_Sigma_NA = FALSE
+)
 }
 \arguments{
 \item{CVT}{list describing lag structure for each kernel}
