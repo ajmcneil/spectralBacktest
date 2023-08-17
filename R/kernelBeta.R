@@ -45,15 +45,22 @@ Mseries3F2 <- function(a1,b1,a2,b2,z=1,k=0,tol=1e-8) {
 #  gsl::beta_inc(a,b,x) is the same as pbeta() but handles b<0
 
 # Helper function for incomplete beta when b==0 and 2*a is an integer.
+# See Gonzalez-Santander (Mathematics, 2021), equations (7) and (9)
+# https://doi.org/10.3390/math9131486
+# For the arctanh function, substitute using:
+# 2log(1+sqrt(x))-log(1-x) = 2*arctanh(sqrt(x))
+# which follows from https://functions.wolfram.com/01.27.02.0001.01
 beta_inc_B_0 <- function(x,a) {
   stopifnot("parameter a is integer or half-integer"=is.natural(2*a))
   halfint <- a %% 1
   h <- -log(1-x)
   if (halfint>0)
     h <- h + 2*log(1+sqrt(x))
+
   if (a>1.4) {
-    w <- (1:ceiling(a-1))-halfint
-    h <- h - drop(crossprod(1/w, x^w))
+    h <- h - (purrr::map(seq_len(ceiling(a-1))-halfint,
+                        \(w) x^w/w) |>
+      purrr::reduce(`+`))
   }
   return(h)
 }
@@ -177,7 +184,7 @@ nu_beta <- function(support=c(0,1), param, standardize=TRUE) {
     W <- beta_inc_B(pmin(PITscaled, scaledsupport[2]), p,q)-
       beta_inc_B(pmin(PITscaled, scaledsupport[1]), p,q)
     if (standardize) {
-      mu <- mu_beta(support, c(p,q), scaling) %>% unname()
+      mu <- mu_beta(support, c(p,q), scaling) |> unname()
       W <- (W-mu[1])/sqrt(mu[2]-mu[1]^2)
     }
     return(W)

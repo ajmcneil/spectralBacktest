@@ -1,5 +1,5 @@
 ---
-title: "Spectral backtests of unconditional coverage"
+title: "Spectral backtests of unconditional coverage with alpha2=1"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -38,20 +38,7 @@ The spectral test is specified using a kernel list of type "mono" or "bi" or "mu
 ```{r warning=FALSE}
 
 alpha1 <- 0.95
-alpha_star <- 0.99
-alpha2 <- 0.995
-
-BIN <- list( name = 'Binomial score at 99%',
-             type = 'mono',
-             nu = nu_discrete,
-             support = alpha_star,
-             param = 1 )
-
-ZU3 <- list( name = 'Discrete Uniform 3',
-             type = 'mono',
-             nu = nu_discrete,
-             support = c(alpha1, alpha_star, alpha2),
-             param = c(1, 1, 1) )
+alpha2 <- 1
 
 ZE <- list( name = 'Epanechnikov',
             type = 'mono',
@@ -76,18 +63,25 @@ ZLn <- list( name = 'LinearDown',
             support = c(alpha1, alpha2),
             param = -1 )
 
-ZZ1 <- list( name = 'Beta(1,0) on [alpha1, 1]',
+
+ZZhalf <- list( name = 'Beta(1/2,0)',
+            type = 'mono',
+            nu = nu_beta,
+            support = c(alpha1, alpha2),
+            param = list(beta=c(1/2,0), scaling=c(alpha1,1)))
+
+ZZ1 <- list( name = 'Beta(1,0)',
             type = 'mono',
             nu = nu_beta,
             support = c(alpha1, alpha2),
             param = c(1,0))
 #            param = list(beta=c(1,0), scaling=c(alpha1,1)))
 
-ZZhalf <- list( name = 'Beta(1/2,0) on [alpha1, 1]',
+ZZ5 <- list( name = 'Beta(5,0)',
             type = 'mono',
             nu = nu_beta,
             support = c(alpha1, alpha2),
-            param = list(beta=c(1/2,0), scaling=c(alpha1,1)))
+            param = c(5,0))
 
 ZLL <- list( name = 'linear/Linear',
              type = 'bi',
@@ -103,6 +97,13 @@ ZAE <- list( name = 'Arcsin/Epanechnikov',
              support = c(alpha1, alpha2),
              param = list(NULL, NULL) )
 
+ZZQ <- list( name = 'quadratic/Quadratic',
+             type = 'bi',
+             nu = list(nu_beta, nu_beta),
+             correlation = rho_beta_beta,
+             support = c(alpha1, alpha2),
+             param = list(c(2,0), c(1,3)) )
+
 ZQQ <- list( name = 'quadratic/Quadratic',
              type = 'bi',
              nu = list(nu_beta, nu_beta),
@@ -117,18 +118,9 @@ ZQUQ <- list( name = 'quadratic/Uniform/Quadratic',
              support = c(alpha1, alpha2),
              param = list(c(3,1), c(1,1), c(1,3)) )
 
-
-Pearson3 <- list(name = 'Pearson',
-                 type = 'multi',
-                 nu = nu_pearson,
-                 correlation = rho_pearson,
-                 support=NULL,
-                 param=list(alpha1, alpha_star, alpha2))
-
 # gather the tests into a list and execute!
-kernlist <- list(BIN=BIN, Pearson3=Pearson3, ZU3=ZU3,
-                  ZU=ZU, ZE=ZE, ZLp=ZLp, ZLn=ZLn, 
-                  ZLL=ZLL, ZAE=ZAE, ZQQ=ZQQ, ZQUQ=ZQUQ)
+kernlist <- list(ZU=ZU, ZE=ZE, ZLp=ZLp, ZLn=ZLn, ZZhalf=ZZhalf, ZZ1=ZZ1, 
+                  ZZ5=ZZ5, ZLL=ZLL, ZAE=ZAE, ZQQ=ZQQ, ZZQ=ZZQ, ZQUQ=ZQUQ)
 
 pval <- map_dfr(list(PIT1, PIT2), 
                function(P) lapply(kernlist, function(kern) spectral_Ztest(kern,P))) %>%

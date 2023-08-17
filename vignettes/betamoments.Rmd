@@ -1,0 +1,147 @@
+---
+title: "Moments for the Beta Kernel"
+author: "Michael Gordy"
+date: "2023-07-06"
+output:
+    bookdown::html_document2:
+      base_format: rmarkdown::html_vignette
+bibliography: ["sb.bib"]
+link-citations: true      
+---
+
+\newcommand{\indicator}[1]{\mathbb{1}_{\{#1\}}}
+\newcommand{\betaa}{a}
+\newcommand{\betab}{b}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\bigO}{\mathcal{O}} 
+\newcommand{\N}{\mathbb{N}}
+
+
+We seek solutions to the moments and cross-moments of the transformed PIT values when the kernel densities take the form
+$$
+g_\nu(u) = (\alpha_2-\alpha_1)^{1-\betaa-\betab} (u-\alpha_1)^{\betaa-1} (\alpha_2-u)^{\betab-1} \indicator{\alpha_1\leq u\leq\alpha_2}
+$$
+for parameters $(\betaa>0, \betab>-1/2)$ and $0\leq\alpha_1< \alpha_2\leq1$. We draw mainly upon the websites *functions.wolfram.com* [(FWC)](https://functions.wolfram.com) and *NIST Digital Library of Mathematical Functions* [(DLMF)](https://dlmf.nist.gov/). 
+
+Coding is facilitated by computing moments in terms of the moments of standardized beta kernels with $\alpha_1=0,\alpha_2=1$. Let $\tilde{\nu}$ denote a beta$(\betaa,\betab)$ kernel scaled to $[0,1]$ and let $\tilde{W}=G_{\tilde{\nu}}(U)$ for $U\sim\text{Uniform}(0,1)$.  The uncentered moments of $W$ can be obtained as:
+\begin{equation}
+    \E[W^k] = \begin{cases}
+      (\alpha_2-\alpha_1)\E[\tilde{W}^k] + (1-\alpha_2)G_{\tilde{\nu}}(1)^k & \text{if } \alpha_2 < 1 \\
+      (1-\alpha_1)\E[\tilde{W}^k] & \text{if } \alpha_2 = 1 .
+      \end{cases}
+\end{equation}
+
+By [DLMF 8.17(ii)](https://dlmf.nist.gov/8.17#ii), the kernel function $G_{\tilde{\nu}}(u)=B(u; \betaa,\betab)$ can be expressed in terms of the Gauss hypergeometric function, ${_2}F_1$, in two equivalent forms: 
+\begin{align}
+B(u; \betaa,\betab)  &= \frac{u^\betaa}{\betaa}{_2}F_1(\betaa, 1-\betab; \betaa+1; u)  (\#eq:incbetastandard) \\
+                &= \frac{u^\betaa(1-u)^\betab}{\betaa} {_2}F_1(1, \betaa+\betab; \betaa+1; u).  (\#eq:incbetavar)
+\end{align}
+We will use each of these forms below.
+
+The two forms are equivalent at $b=0$. Standard algorithms for the incomplete beta  function are numerically unstable for $\betab\approx 0$ in the neighborhood of $p=1$. For the interesting special case of $\betab=0$ and $\betaa\in\Q^+$, \citet[Theorem 1]{bib:gonzalezSantander} provides a finite series expansion in elementary functions.
+
+The first moment of $\tilde{W}$ is 
+$$
+  \E[\tilde{W}] = \int_0^1 (1-u)g_{\tilde{\nu}}(u)\,du = B(\betaa,1+\betab) 
+$$
+Since $\betab>-1/2$, this expression presents no difficulties for our application.
+
+Say we have two beta variables with (possibly) different parameters $(\betaa_i,\betab_i)$ for $i=1,2$. Let $\tilde{G}_i$ denote the transform function for kernel $i$. To get cross-moments and second moments, we need the integral
+\begin{align}
+   \mbox{}& M(\betaa_1,\betab_1,\betaa_2,\betab_2) = \int_0^1 (1-u) \tilde{g}_1(u) \tilde{G}_2(u) du (\#eq:defineM) \\ 
+  &= \frac{B(\betaa_1+\betaa_2,1+\betab_1)}{\betaa_2}
+             {_3}F_2(\betaa_2,\betaa_1+\betaa_2,1-\betab_2; 1+\betaa_2, 1+\betaa_1+\betaa_2+\betab_1; 1) (\#eq:MoneA) \\
+  &= \frac{B(\betaa_1+\betaa_2,1+\betab_1+\betab_2)}{\betaa_2}
+             {_3}F_2(1,\betaa_1+\betaa_2,\betaa_2+\betab_2; 1+\betaa_2, 1+\betaa_1+\betaa_2+\betab_1+\betab_2; 1) (\#eq:MoneB) 
+\end{align}
+\noindent The two forms come from application of eq.~7.512.5 in @gradryz7 to \@ref(eq:incbetastandard) and \@ref(eq:incbetavar), respectively.   When calculated from its series expansion, equation \@ref(eq:MoneA) will be numerically stable whenever $\betab_2\leq0$ whereas \@ref(eq:MoneB) will be numerically stable whenever $\betab_2>0$.
+
+There are numerous special cases for which ${_3}F_2(1)$ has known closed-form solution. 
+
+## Case $\betab_1=0$ {-}
+When $b_1=0$ and $\betab_2\neq0$, we apply [FWC 07.27.03.0119.01](https://functions.wolfram.com/07.27.03.0119.01) to \@ref(eq:incbetastandard) to obtain
+\begin{equation}
+M(\betaa_1,0,\betaa_2,\betab_2) = \frac{1}{\betaa_1}\left(B(\betaa_2, \betab_2) - B(\betaa_1+\betaa_2, \betab_2)\right)
+\end{equation}
+When $b_1=\betab_2=0$, we instead apply [FWC 07.27.03.0035.01](https://functions.wolfram.com/07.27.03.0035.01) to \@ref(eq:MoneB):
+\begin{equation}
+M(\betaa_1,0,\betaa_2,0) 
+     = \frac{1}{\betaa_1}\left(\psi(\betaa_1+\betaa_2)-\psi(\betaa_2)\right)
+\end{equation}
+where $\psi$ is the digamma function.  One can derive this by noting that 
+[FWC 06.14.26.0001.01](https://functions.wolfram.com/06.14.26.0001.01) and
+[FWC 06.18.06.0004.01](https://functions.wolfram.com/06.18.06.0004.01) 
+together imply the limit
+\[
+    \lim_{b\rightarrow0} \left(\frac{1}{b}-B(a,b)\right) = \psi(a)+\gamma
+\]
+where $\gamma$ is the Euler-Mascheroni constant.
+
+## Case $\betab_1=n\in\N$ {-}
+Binomial expansion of the term $(1-u)^{\betab_1}$ in the integral form \@ref(eq:defineM) of $M$ leads to
+$$
+    M(\betaa_1,n,\betaa_2,\betab_2)=
+    \sum_{k=0}^n (-1)^k\binom{n}{k} M(\betaa_1+k,0,\betaa_2,\betab_2)
+$$
+This approach would be practical for small values of $n$.
+
+## Case $\betaa_2=n\in\N$ {-}
+For the moment, assume $\betab_2\neq0$. We have from 
+[FWC 06.19.03.0003.01](https://functions.wolfram.com/06.19.03.0003.01):
+\begin{equation}
+  B(u; n, \betab) = B(n,\betab)\left(
+              1-(1-u)^\betab\sum_{k=0}^{n-1}\frac{(\betab)_k u^k}{k!}\right)
+\end{equation}
+where $(b)_k$ is Pochhammer's notation defined recursively by $(b)_0=1$, $(b)_{m+1}=(b+m)\cdot (b)_m$.
+This leads to 
+\begin{equation}
+(\#eq:betaaaN)
+ M(\betaa_1,\betab_1,n,\betab_2) = 
+   \frac{(n-1)!}{(\betab_2)_n}\left(B(\betaa_1,1+\betab_1)
+   - \sum_{k=0}^{n-1}\frac{(\betab_2)_k}{k!}
+     B(\betaa_1+k,1+\betab_1+\betab_2)\right).
+\end{equation}
+This can be computed more effectively in recursive form:
+\begin{align}
+    M(\betaa_1,\betab_1,1,\betab_2) &=
+    \frac{1}{\betab_2}\left(B(\betaa_1, 1+\betab_1) -
+     B(\betaa_1, 1+\betab_1+\betab_2)\right) (\#eq:Mrecursestop)
+    \\
+    M(\betaa_1,\betab_1,m+1,\betab_2) &= 
+    \frac{1}{\betab_2+m}\left(m\; M(\betaa_1,\betab_1,m,\betab_2)-B(\betaa_1+m, 1+\betab_1+\betab_2)\right) (\#eq:Mrecursenext)
+\end{align}
+
+To take the limit of \@ref(eq:Mrecursestop) as $\betab_2\rightarrow0$, we have by 
+[FWC 06.18.06.0013.01](https://functions.wolfram.com/06.18.06.0013.01)  that 
+\[ B(a,b+z) = B(a,b)(1+ z(\psi(b+1)-\psi(a+b+1)) + \bigO(z^2)) \]
+which implies 
+\begin{equation}
+    M(\betaa_1,\betab_1,1,0) = 
+     B(\betaa_1,1+\betab_1)\left(\psi(1+\betaa_1+\betab_1) - \psi(1+\betab_1)\right)
+     (\#eq:Monerecursestopzero)
+\end{equation}
+Observe that \@ref(eq:Mrecursenext) is well-behaved at $\betab_2=0$.
+
+## Case $\betab_2=n\in\N$ {-}
+We have from [FWC 06.19.03.0001.01](https://functions.wolfram.com/06.19.03.0001.01):
+\begin{equation}
+  B(u;\betaa, 1+m) = B(\betaa,1+m)\,u^\betaa \sum_{k=0}^m\frac{(\betaa)_k (1-u)^k}{k!}
+(\#eq:Bxam)
+\end{equation}
+Substituting into the integral for $M$:
+$$
+ M(\betaa_1,\betab_1,\betaa_2,n) = \frac{(n-1)!}{(\betaa_2)_n} 
+   \sum_{k=0}^{n-1}\frac{(\betaa_2)_k}{k!} B(\betaa_1+\betaa_2,\betab_1+k+1).
+$$
+This could also be expressed compactly in recursive form.  An especially simple subcase is 
+\begin{equation}
+ M(\betaa_1,\betab_1,\betaa_2,1) = \frac{1}{\betaa_2} B(\betaa_1+\betaa_2,\betab_1+1).
+ (\#eq:Mbetatwoisone)
+\end{equation}
+
+## References {-}
+
+
+

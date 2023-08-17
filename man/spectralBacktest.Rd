@@ -10,7 +10,7 @@ defined in \href{https://arxiv.org/abs/1708.01489}{Gordy and McNeil (2018)}.  Th
 discrete and continuous kernels, and tests of both unconditional and conditional
 coverage.
 }
-\section{Monokernel, bikernel and multikernel objects}{
+\section{Monokernel, bikernel, multikernel and tlsfkernel objects}{
 
 
 A monokernel is a list with the following named elements:
@@ -100,6 +100,20 @@ are passed as a \code{param} list rather than in the \code{support} field:
                       correlation = rho_pearson,
                       support = NULL,
                       param = list(0.985, 0.99, 0.995) )
+}
+
+Finally, we represent the TLSF bikernels as a list with the following named elements:
+\itemize{
+  \item{\code{name} is a (string) name for the kernel.}
+  \item{\code{type} is string value 'tlsf'.}
+  \item{\code{nu} is a closure taking parameters \code{support} and \code{param},
+    and returning a function mapping PIT values to transformed PIT values, i.e., \eqn{W=\nu(P)}.
+    \eqn{W} is a list in which element \eqn{j} is the j-th kernel applied to PIT. It is
+    assumed that the kernels de-mean the transformed PIT but do not scale to unit variance.}
+  \item{\code{VCV} is a function taking parameters \code{support} and \code{param},
+    and returning a variance-covariance for the kernels under the null hypothesis.}
+  \item{\code{support} is the support of the kernel represented as a vector \eqn{(\alpha_1,\alpha_2)}.}
+  \item{\code{param} is an optional list of parameters to the kernel. Generally not used.}
 }
 }
 

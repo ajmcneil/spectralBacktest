@@ -6,7 +6,7 @@
 #' coverage.
 #'
 #'
-#' @section Monokernel, bikernel and multikernel objects:
+#' @section Monokernel, bikernel, multikernel and tlsfkernel objects:
 #'
 #' A monokernel is a list with the following named elements:
 #' \itemize{
@@ -95,6 +95,20 @@
 #'                       correlation = rho_pearson,
 #'                       support = NULL,
 #'                       param = list(0.985, 0.99, 0.995) )
+#' }
+#'
+#' Finally, we represent the TLSF bikernels as a list with the following named elements:
+#' \itemize{
+#'   \item{\code{name} is a (string) name for the kernel.}
+#'   \item{\code{type} is string value 'tlsf'.}
+#'   \item{\code{nu} is a closure taking parameters \code{support} and \code{param},
+#'     and returning a function mapping PIT values to transformed PIT values, i.e., \eqn{W=\nu(P)}.
+#'     \eqn{W} is a list in which element \eqn{j} is the j-th kernel applied to PIT. It is
+#'     assumed that the kernels de-mean the transformed PIT but do not scale to unit variance.}
+#'   \item{\code{VCV} is a function taking parameters \code{support} and \code{param},
+#'     and returning a variance-covariance for the kernels under the null hypothesis.}
+#'   \item{\code{support} is the support of the kernel represented as a vector \eqn{(\alpha_1,\alpha_2)}.}
+#'   \item{\code{param} is an optional list of parameters to the kernel. Generally not used.}
 #' }
 #'
 #' @section Tests of unconditional coverage:
@@ -196,6 +210,9 @@ apply_nu_to_PIT <- function(kernel, PIT, standardize=TRUE) {
   if (kernel$type=='mono')
     return(kernel$nu(kernel$support, kernel$param, standardize)(PIT))
 
+  if (kernel$type=='tlsf')
+    return(kernel$nu(kernel$support, kernel$param)(PIT))
+
   isscaling <- 'scaling' == names(kernel$param)
   hasscaling <- any(isscaling)
   if (hasscaling) {
@@ -221,16 +238,18 @@ apply_nu_to_PIT <- function(kernel, PIT, standardize=TRUE) {
   }
 
   # multikernel case
-  nuPIT <- function(prm) {
-    if (hasscaling) {
-      prmsca <- list(prm, scaling)
-      names(prmsca) <- names(kernel$param)
-      kernel$nu(kernel$support, prmsca, standardize)(PIT)
-    } else {
-      kernel$nu(kernel$support, prm, standardize)(PIT)
+  if (kernel$type=='multi') {
+    nuPIT <- function(prm) {
+      if (hasscaling) {
+        prmsca <- list(prm, scaling)
+        names(prmsca) <- names(kernel$param)
+        kernel$nu(kernel$support, prmsca, standardize)(PIT)
+      } else {
+        kernel$nu(kernel$support, prm, standardize)(PIT)
+      }
     }
+    return(lapply(param, nuPIT))
   }
-  lapply(param, nuPIT)
 }
 
 # Helper function to check for degeneracy in W.
@@ -282,6 +301,23 @@ multispectral_correlation <- function(multikernel) {
   return(Sigma)
 }
 
+
+#' Cross-moment to correlation.
+#'
+#' Returns a correlation given a cross-moment and two vectors of uncentered moments \eqn{(\mu_1,\mu_2)} for
+#' each kernel.
+#'
+#' @param mux (double) cross-moment \eqn{E[\nu_A(P) \nu_B(P)]} under null
+#' @param muA first two uncentered moments of \eqn{\nu_A(P)}
+#' @param muB first two uncentered moments of \eqn{\nu_B(P)}
+#' @param rho linear correlation of \eqn{\nu_A(P)} and \eqn{\nu_B(P)}
+#' @export
+cross_moment_to_correlation <- function(mux, muA, muB) {
+  sigma <- sqrt((muA[2]-muA[1]^2)*(muB[2]-muB[1]^2))
+  (mux - muA[1]*muB[1])/sigma |> unname()
+}
+
+
 #' Spectral Z-test for mono-kernel
 #'
 #' @param monokernel (list) mono-kernel object (see package help)
@@ -290,7 +326,7 @@ multispectral_correlation <- function(multikernel) {
 #' @return \eqn{p}-value of Z-test
 #' @export
 monospectral_Ztest <- function(monokernel, PIT, twosided=TRUE) {
-  W <- PIT[!is.na(PIT)] %>% as.numeric() %>%
+  W <- PIT[!is.na(PIT)] |> as.numeric() |>
        monokernel$nu(monokernel$support, monokernel$param, standardize=TRUE)()
   if (is.degenerateW(W))
     warning(glue::glue('Kernel {monokernel$name}: transformed PIT has degenerate distribution.\n'))
@@ -342,6 +378,23 @@ multispectral_Ztest <- function(multikernel, PIT) {
   return(1-pchisq(stat,df=J))
 }
 
+#' Spectral Z-test for tlsfkernel
+#'
+#' @param tlsfkernel (list) TLSF kernel object (see package help)
+#' @param PIT Vector of probability integral transform values
+#' @return \eqn{p}-value of chisq-test
+#' @export
+tlsfspectral_Ztest <- function(tlsfkernel, PIT) {
+  P <- na.omit(PIT)
+  W_list <- apply_nu_to_PIT(tlsfkernel, P)
+  if (any(is.degenerateW(W_list)))
+    warning(glue::glue('Kernel {multikernel$name}: transformed PIT has degenerate distribution.\n'))
+  Wbar <- purrr::map_dbl(W_list, mean)
+  Sigma <- tlsfkernel$VCV(tlsfkernel$support, tlsfkernel$param)
+  stat <-  length(P)*mahalanobis(Wbar, center=0, cov=Sigma)
+  return(1-pchisq(stat,df=length(Wbar)))
+}
+
 #' Spectral Z-test for any kernel type
 #'
 #' @param kernel (list) kernel object (see package help)
@@ -353,5 +406,6 @@ spectral_Ztest <- function(kernel, PIT, twosided=TRUE) {
   switch(kernel$type,
          mono = monospectral_Ztest(kernel, PIT, twosided),
          bi = bispectral_Ztest(kernel, PIT),
-         multi = multispectral_Ztest(kernel, PIT) )
+         multi = multispectral_Ztest(kernel, PIT),
+         tlsf = tlsfspectral_Ztest(kernel,PIT))
 }

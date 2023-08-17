@@ -1,0 +1,108 @@
+---
+title: "Spectral TLSF backtests of unconditional coverage"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Demonstrating tests of unconditional coverage in the spectralBacktest package based on TLSF kernels}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r echo=FALSE, message=FALSE}
+library(spectralBacktest)
+library(purrr)
+library(dplyr)
+library(knitr)
+set.seed(543)
+
+# Support
+alpha1 <- 0.95
+alpha2 <- 0.995
+
+```
+
+We two samples of PIT values.  The first (PIT1) has uniform distribution, which coincides with the null hypothesis.  The second (PIT2) has beta distribution with excess mass in the upper and lower tails. 
+
+```{r fig.width=6, fig.height=4}
+
+n <- 750
+alfbet <- 0.9
+
+PIT1 <- runif(n)
+PIT2 <- rbeta(n,alfbet,alfbet)
+
+hist(PIT2)
+
+```
+
+The spectral test is specified using a kernel list of type "tlsf". We want to run a set of tests, so specify a list of kernel lists.
+
+```{r warning=FALSE}
+
+PNS <- list( name = 'Probitnormal score',
+             type = 'tlsf',
+             nu = nu_probitnormal,
+             VCV = vcv_probitnormal,
+             support = c(alpha1, alpha2),
+             param = NULL)
+
+LLS <- list( name = 'Logit-Logistic score',
+             type = 'tlsf',
+             nu = nu_logitlogistic,
+             VCV = vcv_logitlogistic,
+             support = c(alpha1, alpha2),
+             param = NULL)
+
+GS <- list( name = 'Gumbel score',
+             type = 'tlsf',
+             nu = nu_gumbel,
+             VCV = vcv_gumbel,
+             support = c(alpha1, alpha2),
+             param = FALSE)
+GcS <- list( name = 'Gumbel score',
+             type = 'tlsf',
+             nu = nu_gumbel,
+             VCV = vcv_gumbel,
+             support = c(alpha1, alpha2),
+             param = TRUE)
+
+# gather the tests into a list and execute!
+kernlist <- list(PNS=PNS, LLS=LLS,GS=GS,GcS=GcS)
+
+pval <- map_dfr(list(PIT1, PIT2), 
+               function(P) lapply(kernlist, function(kern) spectral_Ztest(kern,P))) %>%
+        mutate(PIT=c('Uniform',sprintf('Beta(%0.2f,%0.2f)',alfbet,alfbet)), .before=1)
+        # select('PIT', everything())
+
+kable(pval, digits=4)
+
+```
+
+Now let's see how to assess the size and power of the test. We generate a large number of backtesting samples, and apply the same set of tests to each.  Results are gathered in a tibble.  We summarize the tibble by reporting the percentage of rejections (at the 5% level) for each test.  
+
+To assess *size*, we need a uniform DGP, so set $a=b=1$. Ideally, the test will reject about 5% of the time. 
+
+```{r warning=FALSE}
+
+n <- 500
+Npf <- 5000  # number of portfolios
+rpval <- function(kernellist,a,b) {
+  P <- rbeta(n,a,b)
+  map(kernellist, ~spectral_Ztest(.x,P))
+}
+
+df <- rerun(Npf, rpval(kernlist,1,1)) %>%  map_dfr(`[`,names(kernlist))
+rejectrate <- summarize(df, across(.fns=function(x) mean(x<=0.05)))
+kable(rejectrate, digits=4, caption='Size. Frequency of test rejections at 5% level')
+
+```
+
+Finally, we assess the *power* of the tests against a non-uniform DGP. Here we want the test to reject as often as possible.
+
+```{r warning=FALSE}
+
+df <- rerun(Npf, rpval(kernlist,alfbet,alfbet)) %>%  map_dfr(`[`,names(kernlist))
+rejectrate <- summarize(df, across(.fns=function(x) mean(x<=0.05)))
+kable(rejectrate, digits=4, caption='Power. Frequency of test rejections at 5% level')
+
+```
