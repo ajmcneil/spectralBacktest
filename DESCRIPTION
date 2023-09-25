@@ -1,7 +1,7 @@
 Package: spectralBacktest
 Type: Package
 Title: Spectral Backtests of Forecast Distributions
-Version: 0.5.3
+Version: 0.5.4
 Author: Michael Gordy and Alexander McNeil
 Maintainer: Michael Gordy <michael.gordy@frb.gov>
 Description: This package implements the class of moment-based spectral backtests described

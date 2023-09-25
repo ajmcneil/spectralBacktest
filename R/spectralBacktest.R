@@ -386,9 +386,10 @@ multispectral_Ztest <- function(multikernel, PIT) {
 #' @export
 tlsfspectral_Ztest <- function(tlsfkernel, PIT) {
   P <- na.omit(PIT)
-  W_list <- apply_nu_to_PIT(tlsfkernel, P)
+  W_list <- tlsfkernel$nu(tlsfkernel$support, tlsfkernel$param)(P)
+  # W_list <- apply_nu_to_PIT(tlsfkernel, P)
   if (any(is.degenerateW(W_list)))
-    warning(glue::glue('Kernel {multikernel$name}: transformed PIT has degenerate distribution.\n'))
+    warning(glue::glue('Kernel {tlsfkernel$name}: transformed PIT has degenerate distribution.\n'))
   Wbar <- purrr::map_dbl(W_list, mean)
   Sigma <- tlsfkernel$VCV(tlsfkernel$support, tlsfkernel$param)
   stat <-  length(P)*mahalanobis(Wbar, center=0, cov=Sigma)
