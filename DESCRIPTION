@@ -11,7 +11,7 @@ Description: This package implements the class of moment-based spectral backtest
    function and (in the conditional tests) transformation of lagged PIT values.
 License: GPL-3
 Encoding: UTF-8
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Depends: 
     Matrix,
     purrr,

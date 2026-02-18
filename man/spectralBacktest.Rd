@@ -2,6 +2,7 @@
 % Please edit documentation in R/spectralBacktest.R
 \docType{package}
 \name{spectralBacktest}
+\alias{spectralBacktest-package}
 \alias{spectralBacktest}
 \title{spectralBacktest: Package for spectral backtesting of forecast distributions}
 \description{
