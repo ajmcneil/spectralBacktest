@@ -12,7 +12,6 @@ vignette: >
 library(spectralBacktest)
 library(purrr)
 library(knitr)
-library(Matrix)
 set.seed(543)
 
 ```
@@ -46,6 +45,12 @@ ZU <- list( name = 'Uniform',
             support = c(alpha1, alpha2),
             param = NULL )
 
+ZZ1 <- list( name = 'Beta(1,0) on [alpha1, 1]',
+            type = 'mono',
+            nu = nu_beta,
+            support = c(alpha1, 1),
+            param = c(1,0))
+
 ZLL <- list( name = 'Linear/Linear',
              type = 'bi',
              nu = list(nu_linear, nu_linear),
@@ -53,15 +58,8 @@ ZLL <- list( name = 'Linear/Linear',
              support = c(alpha1, alpha2),
              param = list(-1, 1) )
 
-PNS <- list( name = 'Probitnormal score',
-             type = 'bi',
-             nu = list(nu_probitnormal, nu_probitnormal),
-             correlation = rho_probitnormal,
-             support = c(alpha1, alpha2),
-             param = list(1L, 2L) )
-
 # gather the tests into a list and execute!
-kernlist <- list(ZU=ZU, ZLL=ZLL, PNS=PNS)
+kernlist <- list(ZU=ZU, ZZ1=ZZ1, ZLL=ZLL)
 pval_Z <- map_df(kernlist, function(kern) spectral_Ztest(kern,P))
 kable(pval_Z, digits=5, caption='p-values of tests of unconditional coverage')
 
@@ -87,7 +85,7 @@ CVT2 <- list( name = 'Power4/Power 0.5',
               h_param = list(4,1/2),  
               lags = c(4L,0) )
 
-MDlist <- list(CVT, CVT2, CVT2)  # same length as kernlist, defined earlier
+MDlist <- list(CVT, CVT, CVT2)  # same length as kernlist, defined earlier
 
 infoinH <- list('none', 'partial', 'full')
 pval_MD <- map_df(infoinH, function(s) 

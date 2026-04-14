@@ -79,15 +79,14 @@ ZLn <- list( name = 'LinearDown',
 ZZ1 <- list( name = 'Beta(1,0) on [alpha1, 1]',
             type = 'mono',
             nu = nu_beta,
-            support = c(alpha1, alpha2),
+            support = c(alpha1, 1),
             param = c(1,0))
-#            param = list(beta=c(1,0), scaling=c(alpha1,1)))
 
 ZZhalf <- list( name = 'Beta(1/2,0) on [alpha1, 1]',
             type = 'mono',
             nu = nu_beta,
-            support = c(alpha1, alpha2),
-            param = list(beta=c(1/2,0), scaling=c(alpha1,1)))
+            support = c(alpha1, 1),
+            param = c(1,0))
 
 ZLL <- list( name = 'linear/Linear',
              type = 'bi',
@@ -125,17 +124,16 @@ Pearson3 <- list(name = 'Pearson',
                  support=NULL,
                  param=list(alpha1, alpha_star, alpha2))
 
-# gather the tests into a list and execute!
-kernlist <- list(BIN=BIN, Pearson3=Pearson3, ZU3=ZU3,
-                  ZU=ZU, ZE=ZE, ZLp=ZLp, ZLn=ZLn, 
-                  ZLL=ZLL, ZAE=ZAE, ZQQ=ZQQ, ZQUQ=ZQUQ)
+# gather the tests into lists and execute!
+# Monokernels
+kernlist1 <- list(BIN=BIN, ZU3=ZU3, ZU=ZU, ZE=ZE, ZLp=ZLp, ZLn=ZLn,ZZ1=ZZ1,ZZhalf=ZZhalf)
+kernlist2 <- list(Pearson3=Pearson3, ZLL=ZLL, ZAE=ZAE, ZQQ=ZQQ, ZQUQ=ZQUQ)
 
 pval <- map_dfr(list(PIT1, PIT2), 
-               function(P) lapply(kernlist, function(kern) spectral_Ztest(kern,P))) %>%
+               function(P) lapply(kernlist1, function(kern) spectral_Ztest(kern,P))) |>
         mutate(PIT=c('Uniform',sprintf('Beta(%0.2f,%0.2f)',alfbet,alfbet)), .before=1)
-        # select('PIT', everything())
 
-kable(pval, digits=4)
+kable(pval, digits=4,caption="p-values for monokernel tests")
 
 ```
 
@@ -143,7 +141,7 @@ Now let's see how to assess the size and power of the test. We generate a large 
 
 To assess *size*, we need a uniform DGP, so set $a=b=1$. Ideally, the test will reject about 5% of the time. 
 
-```{r warning=FALSE}
+```{r results='asis', warning=FALSE}
 
 n <- 500
 Npf <- 5000  # number of portfolios
@@ -152,18 +150,24 @@ rpval <- function(kernellist,a,b) {
   map(kernellist, ~spectral_Ztest(.x,P))
 }
 
-df <- rerun(Npf, rpval(kernlist,1,1)) %>%  map_dfr(`[`,names(kernlist))
-rejectrate <- summarize(df, across(.fns=function(x) mean(x<=0.05)))
-kable(rejectrate, digits=4, caption='Size. Frequency of test rejections at 5% level')
-
+df1 <- rerun(Npf, rpval(kernlist1,1,1)) %>%  map_dfr(`[`,names(kernlist1))
+rejectrate1 <- summarize(df1, across(.fns=function(x) mean(x<=0.05)))
+kable(rejectrate1, digits=4, caption='Size for monokernel tests. Frequency of test rejections at 5% level')
+df2 <- rerun(Npf, rpval(kernlist2,1,1)) %>%  map_dfr(`[`,names(kernlist2))
+rejectrate2 <- summarize(df2, across(.fns=function(x) mean(x<=0.05)))
+kable(rejectrate2, digits=4, caption='Size for multikernel tests. Frequency of test rejections at 5% level')
 ```
 
 Finally, we assess the *power* of the tests against a non-uniform DGP. Here we want the test to reject as often as possible.
 
 ```{r warning=FALSE}
 
-df <- rerun(Npf, rpval(kernlist,alfbet,alfbet)) %>%  map_dfr(`[`,names(kernlist))
-rejectrate <- summarize(df, across(.fns=function(x) mean(x<=0.05)))
-kable(rejectrate, digits=4, caption='Power. Frequency of test rejections at 5% level')
+df1 <- rerun(Npf, rpval(kernlist1,alfbet,alfbet)) %>%  map_dfr(`[`,names(kernlist1))
+rejectrate1 <- summarize(df1, across(.fns=function(x) mean(x<=0.05)))
+kable(rejectrate1, digits=4, caption='Power for monokernel tests. Frequency of test rejections at 5% level')
+
+df2 <- rerun(Npf, rpval(kernlist2,alfbet,alfbet)) %>%  map_dfr(`[`,names(kernlist2))
+rejectrate2 <- summarize(df2, across(.fns=function(x) mean(x<=0.05)))
+kable(rejectrate2, digits=4, caption='Power for multikernel tests. Frequency of test rejections at 5% level')
 
 ```

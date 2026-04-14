@@ -17,7 +17,7 @@ set.seed(543)
 
 # Support
 alpha1 <- 0.95
-alpha2 <- 0.995
+alpha2 <- 1
 
 ```
 
